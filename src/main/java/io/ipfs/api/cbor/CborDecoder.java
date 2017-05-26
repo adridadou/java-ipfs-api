@@ -201,7 +201,7 @@ public class CborDecoder {
     /**
      * Reads a signed or unsigned 32-bit integer value in CBOR format.
      *
-     * @read the small integer value, values in the range <tt>[-4294967296..4294967295]</tt> are supported.
+     * read the small integer value, values in the range <tt>[-4294967296..4294967295]</tt> are supported.
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying output stream.
      */
     public long readInt32() throws IOException {
@@ -216,7 +216,7 @@ public class CborDecoder {
     /**
      * Reads a signed or unsigned 64-bit integer value in CBOR format.
      *
-     * @read the small integer value, values from {@link Long#MIN_VALUE} to {@link Long#MAX_VALUE} are supported.
+     * read the small integer value, values from {@link Long#MIN_VALUE} to {@link Long#MAX_VALUE} are supported.
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying output stream.
      */
     public long readInt64() throws IOException {
@@ -231,7 +231,7 @@ public class CborDecoder {
     /**
      * Reads a signed or unsigned 8-bit integer value in CBOR format.
      *
-     * @read the small integer value, values in the range <tt>[-256..255]</tt> are supported.
+     * read the small integer value, values in the range <tt>[-256..255]</tt> are supported.
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying output stream.
      */
     public int readInt8() throws IOException {
@@ -246,7 +246,7 @@ public class CborDecoder {
     /**
      * Prolog to reading a map of key-value pairs in CBOR format.
      *
-     * @return the number of entries in the map, >= 0.
+     * @return the number of entries in the map, &gt;= 0.
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
     public long readMapLength() throws IOException {
@@ -278,7 +278,7 @@ public class CborDecoder {
     /**
      * Reads a signed or unsigned small (&lt;= 23) integer value in CBOR format.
      *
-     * @read the small integer value, values in the range <tt>[-24..23]</tt> are supported.
+     * read the small integer value, values in the range <tt>[-24..23]</tt> are supported.
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying output stream.
      */
     public int readSmallInt() throws IOException {
@@ -341,7 +341,7 @@ public class CborDecoder {
     /**
      * Reads the next major type from the underlying input stream, and verifies whether it matches the given expectation.
      *
-     * @param majorType the expected major type, cannot be <code>null</code> (unchecked).
+     * @param ib the expected major type, cannot be <code>null</code> (unchecked).
      * @return either <tt>-1</tt> if the major type was an signed integer, or <tt>0</tt> otherwise.
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying input stream.
      */
