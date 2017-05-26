@@ -20,6 +20,14 @@
  		<developerConnection>scm:git:git@github.com:adridadou/java-ipfs-api.git</developerConnection>
  	</scm>
 
+    <distributionManagement>
+        <repository>
+            <id>bintray</id>
+            <name>Cubefriendly maven repo</name>
+            <url>https://api.bintray.com/maven/cubefriendly/maven/java-ipfs-api</url>
+        </repository>
+    </distributionManagement>
+
  	<licenses>
  		<license>
  			<name>MIT License</name>
