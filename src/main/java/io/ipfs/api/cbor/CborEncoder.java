@@ -75,7 +75,7 @@ public class CborEncoder {
     /**
      * Writes the start of an indefinite-length array.
      * <p>
-     * After calling this method, one is expected to write the given number of array elements, which can be of any type. No length checks are performed.<br/>
+     * After calling this method, one is expected to write the given number of array elements, which can be of any type. No length checks are performed.
      * After all array elements are written, one should write a single break value to end the array, see {@link #writeBreak()}.
      * </p>
      *
@@ -134,7 +134,7 @@ public class CborEncoder {
     /**
      * Writes the start of an indefinite-length byte string.
      * <p>
-     * After calling this method, one is expected to write the given number of string parts. No length checks are performed.<br/>
+     * After calling this method, one is expected to write the given number of string parts. No length checks are performed.
      * After all string parts are written, one should write a single break value to end the string, see {@link #writeBreak()}.
      * </p>
      *
@@ -254,7 +254,7 @@ public class CborEncoder {
     /**
      * Writes the start of an indefinite-length map.
      * <p>
-     * After calling this method, one is expected to write any number of map entries, as separate key and value. Keys and values can both be of any type. No length checks are performed.<br/>
+     * After calling this method, one is expected to write any number of map entries, as separate key and value. Keys and values can both be of any type. No length checks are performed.
      * After all map entries are written, one should write a single break value to end the map, see {@link #writeBreak()}.
      * </p>
      *
@@ -350,7 +350,7 @@ public class CborEncoder {
     /**
      * Writes the start of an indefinite-length UTF-8 string.
      * <p>
-     * After calling this method, one is expected to write the given number of string parts. No length checks are performed.<br/>
+     * After calling this method, one is expected to write the given number of string parts. No length checks are performed.
      * After all string parts are written, one should write a single break value to end the string, see {@link #writeBreak()}.
      * </p>
      *
