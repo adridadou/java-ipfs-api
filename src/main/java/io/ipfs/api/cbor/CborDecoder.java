@@ -186,7 +186,7 @@ public class CborDecoder {
     /**
      * Reads a signed or unsigned 16-bit integer value in CBOR format.
      *
-     * @read the small integer value, values from <tt>[-65536..65535]</tt> are supported.
+     * read the small integer value, values from <tt>[-65536..65535]</tt> are supported.
      * @throws IOException in case of I/O problems reading the CBOR-encoded value from the underlying output stream.
      */
     public int readInt16() throws IOException {
