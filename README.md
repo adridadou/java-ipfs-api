@@ -51,11 +51,17 @@ Multihash filePointer = Multihash.fromBase58("QmPZ9gcCEpqKTo6aq61g2nXGUhM4iCL3ew
 byte[] fileContents = ipfs.cat(filePointer);
 ```
 
+## Dependencies
+* [multibase](https://github.com/multiformats/java-multibase)
+* [multiaddr](https://github.com/multiformats/java-multiaddr)
+* [multihash](https://github.com/multiformats/java-multihash)
+* [cid](https://github.com/ipld/java-cid)
+
 ## Building
 ---------
-To build just run make. There are no dependencies, just include the resulting IPFS.jar in your project. 
+To build just run `ant dist`. The dependencies are included in the `./lib` directory, and automatically copied to the `./dist/lib` directory.
 
-To run tests use make tests.
+To run tests use `ant test`.
 
 ## Contribute
 
