@@ -18,6 +18,7 @@ public class IPFS {
 
     public final String host;
     public final int port;
+    private final boolean isSecure;
     private final String version;
     public final Pin pin = new Pin();
     public final Repo repo = new Repo();
@@ -35,22 +36,23 @@ public class IPFS {
     public final Stats stats = new Stats();
     public final Name name = new Name();
 
-    public IPFS(String host, int port) {
-        this(host, port, "/api/v0/");
+    public IPFS(String host, int port, boolean isSecure) {
+        this(host, port, "/api/v0/", isSecure);
     }
 
-    public IPFS(String multiaddr) {
-        this(new MultiAddress(multiaddr));
+    public IPFS(String multiaddr, boolean isSecure) {
+        this(new MultiAddress(multiaddr), isSecure);
     }
 
-    public IPFS(MultiAddress addr) {
-        this(addr.getHost(), addr.getTCPPort(), "/api/v0/");
+    public IPFS(MultiAddress addr, boolean isSecure) {
+        this(addr.getHost(), addr.getTCPPort(), "/api/v0/", isSecure);
     }
 
-    public IPFS(String host, int port, String version) {
+    public IPFS(String host, int port, String version, boolean isSecure) {
         this.host = host;
         this.port = port;
         this.version = version;
+        this.isSecure = isSecure;
         // Check IPFS is sufficiently recent
         try {
             String ipfsVersion = version();
@@ -59,7 +61,7 @@ public class IPFS {
             if (parts[0].compareTo(minParts[0]) < 0
                     || parts[1].compareTo(minParts[1]) < 0
                     || parts[2].compareTo(minParts[2]) < 0)
-                throw new IllegalStateException("You need to use a more recent version of IPFS! >= " + MIN_VERSION);
+                throw new IllegalStateException("You need to use a more recent version of IPFS! >= " + MIN_VERSION + ". (" + ipfsVersion + ")");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -75,8 +77,12 @@ public class IPFS {
         return addParts.get(0);
     }
 
+    private String getProtocol() {
+        return isSecure ? "https" : "http";
+    }
+
     public List<MerkleNode> add(List<NamedStreamable> files) throws IOException {
-        Multipart m = new Multipart("http://" + host + ":" + port + version+"add?stream-channels=true", "UTF-8");
+        Multipart m = new Multipart(getProtocol() + "://" + host + ":" + port + version+"add?stream-channels=true", "UTF-8");
         for (NamedStreamable file: files) {
             if (file.isDirectory()) {
                 m.addSubtree("", ((NamedStreamable.FileWrapper)file).getFile());
@@ -500,7 +506,7 @@ public class IPFS {
     }
 
     private byte[] retrieve(String path) throws IOException {
-        URL target = new URL("http", host, port, version + path);
+        URL target = new URL(getProtocol(), host, port, version + path);
         return IPFS.get(target);
     }
 
@@ -527,7 +533,7 @@ public class IPFS {
     }
 
     private InputStream retrieveStream(String path) throws IOException {
-        URL target = new URL("http", host, port, version + path);
+        URL target = new URL(getProtocol(), host, port, version + path);
         return IPFS.getStream(target);
     }
 
@@ -540,7 +546,7 @@ public class IPFS {
     }
 
     private Map postMap(String path, byte[] body, Map<String, String> headers) throws IOException {
-        URL target = new URL("http", host, port, version + path);
+        URL target = new URL(getProtocol(), host, port, version + path);
         return (Map) JSONParser.parse(new String(post(target, body, headers)));
     }
 

@@ -17,7 +17,7 @@ import static org.junit.Assert.assertTrue;
 @Ignore("I trust the origin repository for doing the tests")
 public class APITest {
 
-    private final IPFS ipfs = new IPFS(new MultiAddress("/ip4/127.0.0.1/tcp/5001"));
+    private final IPFS ipfs = new IPFS(new MultiAddress("/ip4/127.0.0.1/tcp/5001"), false);
 
     @org.junit.Test
     public void dag() throws IOException {
