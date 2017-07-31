@@ -7,6 +7,7 @@ import io.ipfs.multiaddr.MultiAddress;
 import org.junit.*;
 
 import java.io.*;
+import java.net.*;
 import java.nio.file.*;
 import java.util.*;
 import java.util.function.*;
@@ -19,7 +20,7 @@ public class APITest {
 
     private final IPFS ipfs = new IPFS(new MultiAddress("/ip4/127.0.0.1/tcp/5001"), false);
 
-    @org.junit.Test
+    @Test
     public void dag() throws IOException {
         byte[] object = "{\"data\":1234}".getBytes();
         MerkleNode put = ipfs.dag.put("json", object);
@@ -33,7 +34,7 @@ public class APITest {
         Assert.assertTrue("Raw data equal", Arrays.equals(object, get));
     }
 
-    @org.junit.Test
+    @Test
     public void dagCbor() throws IOException {
         Map<String, CborObject> tmp = new TreeMap<>();
         tmp.put("data", new CborObject.CborByteArray("G'day mate!".getBytes()));
@@ -51,7 +52,19 @@ public class APITest {
         Assert.assertTrue("Correct cid returned", cid.equals(expected));
     }
 
-    @org.junit.Test
+    @Test
+    public void keys() throws IOException {
+        List<KeyInfo> existing = ipfs.key.list();
+        String name = "mykey" + System.nanoTime();
+        KeyInfo gen = ipfs.key.gen(name, Optional.of("rsa"), Optional.of("2048"));
+        String newName = "bob" + System.nanoTime();
+        Object rename = ipfs.key.rename(name, newName);
+        List<KeyInfo> rm = ipfs.key.rm(newName);
+        List<KeyInfo> remaining = ipfs.key.list();
+        Assert.assertTrue("removed key", remaining.equals(existing));
+    }
+
+    @Test
     public void ipldNode() {
         Function<Stream<Pair<String, CborObject>>, CborObject.CborMap> map =
                 s -> CborObject.CborMap.build(s.collect(Collectors.toMap(p -> p.left, p -> p.right)));
@@ -64,13 +77,21 @@ public class APITest {
         Assert.assertTrue("Correct tree", tree.equals(Arrays.asList("/a/b", "/c")));
     }
 
-    @org.junit.Test
+    @Test
     public void singleFileTest() {
         NamedStreamable.ByteArrayWrapper file = new NamedStreamable.ByteArrayWrapper("hello.txt", "G'day world! IPFS rocks!".getBytes());
         fileTest(file);
     }
 
-    @org.junit.Test
+    @Test
+    public void dirTest() throws IOException {
+        NamedStreamable.DirWrapper dir = new NamedStreamable.DirWrapper("root", Arrays.asList());
+        MerkleNode addResult = ipfs.add(dir);
+        List<MerkleNode> ls = ipfs.ls(addResult.hash);
+        Assert.assertTrue(ls.size() > 0);
+    }
+
+    @Test
     public void directoryTest() throws IOException {
         Random rnd = new Random();
         String dirName = "folder" + rnd.nextInt(100);
@@ -110,7 +131,7 @@ public class APITest {
             throw new IllegalStateException("Different contents!");
     }
 
-//    @org.junit.Test
+//    @Test
     public void largeFileTest() {
         byte[] largerData = new byte[100*1024*1024];
         new Random(1).nextBytes(largerData);
@@ -118,7 +139,7 @@ public class APITest {
         fileTest(largeFile);
     }
 
-//    @org.junit.Test
+//    @Test
     public void hugeFileStreamTest() {
         byte[] hugeData = new byte[1000*1024*1024];
         new Random(1).nextBytes(hugeData);
@@ -146,7 +167,7 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void hostFileTest() throws IOException {
         Path tempFile = Files.createTempFile("IPFS", "tmp");
         BufferedWriter w = new BufferedWriter(new FileWriter(tempFile.toFile()));
@@ -160,11 +181,6 @@ public class APITest {
     public void fileTest(NamedStreamable file) {
         try {
             MerkleNode addResult = ipfs.add(file);
-            List<MerkleNode> lsResult = ipfs.ls(addResult.hash);
-            if (lsResult.size() != 1)
-                throw new IllegalStateException("Incorrect number of objects in ls!");
-            if (!lsResult.get(0).equals(addResult))
-                throw new IllegalStateException("Object not returned in ls!");
             byte[] catResult = ipfs.cat(addResult.hash);
             byte[] getResult = ipfs.get(addResult.hash);
             if (!Arrays.equals(catResult, file.getContents()))
@@ -178,7 +194,7 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void pinTest() {
         try {
             MerkleNode file = ipfs.add(new NamedStreamable.ByteArrayWrapper("some data".getBytes()));
@@ -202,7 +218,7 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void pinUpdate() {
         try {
             MerkleNode child1 = ipfs.add(new NamedStreamable.ByteArrayWrapper("some data".getBytes()));
@@ -233,38 +249,34 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void rawLeafNodePinUpdate() {
         try {
             MerkleNode child1 = ipfs.block.put("some data".getBytes(), Optional.of("raw"));
             Multihash hashChild1 = child1.hash;
-            System.out.println("child1: " + hashChild1);
+            System.out.println("child1: " + hashChild1.type);
 
             CborObject.CborMerkleLink root1 = new CborObject.CborMerkleLink(hashChild1);
             MerkleNode root1Res = ipfs.block.put(Collections.singletonList(root1.toByteArray()), Optional.of("cbor")).get(0);
             System.out.println("root1: " + root1Res.hash);
             ipfs.pin.add(root1Res.hash);
 
-            CborObject.CborList root2 = new CborObject.CborList(Arrays.asList(new CborObject.CborMerkleLink(hashChild1), new CborObject.CborLong(42)));
+            MerkleNode child2 = ipfs.block.put("G'day new tree".getBytes(), Optional.of("raw"));
+            Multihash hashChild2 = child2.hash;
+
+            CborObject.CborList root2 = new CborObject.CborList(Arrays.asList(
+                    new CborObject.CborMerkleLink(hashChild1),
+                    new CborObject.CborMerkleLink(hashChild2),
+                    new CborObject.CborLong(42))
+            );
             MerkleNode root2Res = ipfs.block.put(Collections.singletonList(root2.toByteArray()), Optional.of("cbor")).get(0);
-            List<MultiAddress> update = ipfs.pin.update(root1Res.hash, root2Res.hash, true);
-
-            Map<Multihash, Object> ls = ipfs.pin.ls(IPFS.PinType.all);
-            boolean childPresent = ls.containsKey(hashChild1);
-            if (!childPresent)
-                throw new IllegalStateException("Child not present!");
-
-            ipfs.repo.gc();
-            Map<Multihash, Object> ls2 = ipfs.pin.ls(IPFS.PinType.all);
-            boolean childPresentAfterGC = ls2.containsKey(hashChild1);
-            if (!childPresentAfterGC)
-                throw new IllegalStateException("Child not present!");
+            List<MultiAddress> update = ipfs.pin.update(root1Res.hash, root2Res.hash, false);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    @org.junit.Test
+    @Test
     public void indirectPinTest() {
         try {
             Multihash EMPTY = ipfs.object._new(Optional.empty()).hash;
@@ -295,7 +307,7 @@ public class APITest {
         }
 }
 
-    @org.junit.Test
+    @Test
     public void objectPatch() {
         try {
             MerkleNode obj = ipfs.object._new(Optional.empty());
@@ -332,7 +344,7 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void refsTest() {
         try {
             List<Multihash> local = ipfs.refs.local();
@@ -344,7 +356,7 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void objectTest() {
         try {
             MerkleNode _new = ipfs.object._new(Optional.empty());
@@ -360,7 +372,7 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void blockTest() {
         try {
             MerkleNode pointer = new MerkleNode("QmPZ9gcCEpqKTo6aq61g2nXGUhM4iCL3ewB6LDXZCtioEB");
@@ -372,7 +384,7 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void bulkBlockTest() {
         try {
             CborObject cbor = new CborObject.CborString("G'day IPFS!");
@@ -384,6 +396,18 @@ public class APITest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Test
+    public void pubsub() throws IOException {
+        Object ls = ipfs.pubsub.ls();
+        Object peers = ipfs.pubsub.peers();
+        String topic = "topic" + System.nanoTime();
+        Supplier<Object> sub = ipfs.pubsub.sub(topic);
+        Object first = sub.get();
+        String data = "Hello!";
+        Object pub = ipfs.pubsub.pub(topic, data);
+        Assert.assertTrue(first.equals(Collections.emptyMap()));
     }
 
     private static String toEscapedHex(byte[] in) throws IOException {
@@ -398,7 +422,7 @@ public class APITest {
     /**
      *  Test that merkle links in values of a cbor map are followed during recursive pins
      */
-    @org.junit.Test
+    @Test
     public void merkleLinkInMap() {
         try {
             Random r = new Random();
@@ -434,7 +458,7 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void recursiveRefs() {
         try {
             CborObject.CborByteArray leaf1 = new CborObject.CborByteArray(("G'day IPFS!").getBytes());
@@ -475,7 +499,7 @@ public class APITest {
     /**
      *  Test that merkle links as a root object are followed during recursive pins
      */
-    @org.junit.Test
+    @Test
     public void rootMerkleLink() {
         try {
             Random r = new Random();
@@ -508,9 +532,9 @@ public class APITest {
     }
 
     /**
-     *  Test that merkle links as a root object are followed during recursive pins
+     *  Test that a cbor null is allowed as an object root
      */
-    @org.junit.Test
+    @Test
     public void rootNull() {
         try {
             CborObject.CborNull cbor = new CborObject.CborNull();
@@ -534,7 +558,7 @@ public class APITest {
     /**
      *  Test that merkle links in a cbor list are followed during recursive pins
      */
-    @org.junit.Test
+    @Test
     public void merkleLinkInList() {
         try {
             Random r = new Random();
@@ -562,7 +586,7 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void fileContentsTest() {
         try {
             ipfs.repo.gc();
@@ -578,18 +602,21 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void nameTest() {
         try {
             MerkleNode pointer = new MerkleNode("QmPZ9gcCEpqKTo6aq61g2nXGUhM4iCL3ewB6LDXZCtioEB");
             Map pub = ipfs.name.publish(pointer.hash);
+            String name = "key" + System.nanoTime();
+            Object gen = ipfs.key.gen(name, Optional.of("rsa"), Optional.of("2048"));
+            Map mykey = ipfs.name.publish(pointer.hash, Optional.of(name));
             String resolved = ipfs.name.resolve(Multihash.fromBase58((String) pub.get("Name")));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    @org.junit.Test
+    @Test
     public void dnsTest() {
         try {
             String domain = "ipfs.io";
@@ -607,7 +634,7 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void dhtTest() {
         try {
             Multihash pointer = Multihash.fromBase58("QmPZ9gcCEpqKTo6aq61g2nXGUhM4iCL3ewB6LDXZCtioEB");
@@ -622,7 +649,7 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void statsTest() {
         try {
             Map stats = ipfs.stats.bw();
@@ -640,7 +667,7 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void swarmTest() {
         try {
             String multiaddr = "/ip4/127.0.0.1/tcp/4001/ipfs/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ";
@@ -669,7 +696,7 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void bootstrapTest() {
         try {
             List<MultiAddress> bootstrap = ipfs.bootstrap.list();
@@ -682,7 +709,7 @@ public class APITest {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void diagTest() {
         try {
             Map config = ipfs.config.show();
@@ -690,13 +717,14 @@ public class APITest {
             Map setResult = ipfs.config.set("Datastore.Path", val);
             ipfs.config.replace(new NamedStreamable.ByteArrayWrapper(JSONParser.toString(config).getBytes()));
 //            Object log = ipfs.log();
-            String net = ipfs.diag.net();
+            String sys = ipfs.diag.sys();
+            String cmds = ipfs.diag.cmds();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    @org.junit.Test
+    @Test
     public void toolsTest() {
         try {
             String version = ipfs.version();
