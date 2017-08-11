@@ -10,6 +10,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
+import java.util.logging.Logger;
 import java.util.stream.*;
 
 public class IPFS {
@@ -61,8 +62,11 @@ public class IPFS {
         // Check IPFS is sufficiently recent
         try {
             Version detected = Version.parse(version());
-            if (detected.isBefore(MIN_VERSION))
-                throw new IllegalStateException("You need to use a more recent version of IPFS! >= " + MIN_VERSION);
+            if (detected.isBefore(MIN_VERSION)) {
+                Logger.getAnonymousLogger().warning("You need to use a more recent version of IPFS! >= " + MIN_VERSION);
+                //throw new IllegalStateException("You need to use a more recent version of IPFS! >= " + MIN_VERSION);
+            }
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
