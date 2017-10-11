@@ -45,19 +45,46 @@ public class MerkleNode {
     }
 
     public static MerkleNode fromJSON(Object rawjson) {
-        if (rawjson instanceof String)
+        if (rawjson instanceof String){
             return new MerkleNode((String)rawjson);
-        Map json = (Map)rawjson;
+        }
+
+        Map<String, Object> json = (Map<String, Object>)rawjson;
         String hash = (String)json.get("Hash");
         if (hash == null)
             hash = (String)json.get("Key");
-        Optional<String> name = json.containsKey("Name") ? Optional.of((String) json.get("Name")): Optional.empty();
-        Optional<Integer> size = json.containsKey("Size") ? Optional.<Integer>empty().of((Integer) json.get("Size")): Optional.<Integer>empty().empty();
-        Optional<Integer> type = json.containsKey("Type") ? Optional.<Integer>empty().of((Integer) json.get("Type")): Optional.<Integer>empty().empty();
+        Optional<String> name = getString("Name", json);
+        Optional<Integer> size = getInteger("Size", json);
+        Optional<Integer> type = getInteger("Type", json);
         List<Object> linksRaw = (List<Object>) json.get("Links");
-        List<MerkleNode> links = linksRaw == null ? Collections.EMPTY_LIST : linksRaw.stream().map(x -> MerkleNode.fromJSON(x)).collect(Collectors.toList());
+        List<MerkleNode> links = Optional.ofNullable(linksRaw).orElseGet(Collections::emptyList).stream()
+                .map(MerkleNode::fromJSON).collect(Collectors.toList());
+
         Optional<byte[]> data = json.containsKey("Data") ? Optional.of(((String)json.get("Data")).getBytes()): Optional.empty();
         return new MerkleNode(hash, name, size, type, links, data);
+    }
+
+    private static Optional<String> getString(String name, Map<String, Object> json) {
+        if(!json.containsKey(name)){
+            return Optional.empty();
+        }
+        return Optional.of(json.get(name).toString());
+    }
+
+    private static Optional<Integer> getInteger(String name, Map<String, Object> json) {
+        if(!json.containsKey(name)){
+            return Optional.empty();
+        }
+
+        Object value = json.get(name);
+        if(value instanceof Integer) {
+            return Optional.of((Integer)value);
+        }
+        if(value instanceof String) {
+            return Optional.of(Integer.parseInt(value.toString()));
+        }
+
+        throw new RuntimeException("property " + name + ".looking for an Integer. Got " + value.getClass().getName());
     }
 
     public Object toJSON() {
